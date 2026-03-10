@@ -11,21 +11,21 @@ library(missForest)
 
 ######################amputation################################
 ratio<-0.2
-datasets<-c("pumadyn32nm", "scm1d", "scm20d", "parkinsons")
-n<-2000
+datasets<-c("gas", "pumadyn32nm", "scm1d", "scm20d", "parkinsons")
 
 for (data in datasets){
   
   X0 <- readRDS(paste0("data/datasets/complete/", data, ".RDS"))
   N<-nrow(X0)
   
+  
   ###Only choose numerical variables ####
   X0<-X0[, apply(X0,2, function(x) length(unique(x)))/N >0.7 ]
   
   
   set.seed(1)
-  indextrain<-sample(1:N, size=n, replace=F)
-  indextest<-sample(setdiff(1:N, indextrain), size=n, replace=F)
+  indextrain<-sample(1:N, size= round(N/2)-1 , replace=F)
+  indextest<-sample(setdiff(1:N, indextrain), size=round(N/2)-1, replace=F)
   
   Xtrain<-X0[indextrain,]
   Xtest<-X0[indextest,]
@@ -59,7 +59,7 @@ for (data in datasets){
 }
 #############################################################
 
-datasets<-c("parkinsons")
+datasets<-c("gas", "pumadyn32nm", "scm1d", "scm20d", "parkinsons")
 
 ratio<-0.2
 S<-1
