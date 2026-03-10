@@ -27,9 +27,17 @@ for (data in datasets){
   Xtrain<-X0[indextrain,]
   Xtest<-X0[indextest,]
     
-  X.NA <-mar(Xtrain,ratio=ratio)
+
+  d<-ncol(X0)
+  npattern<-sample(1:round(n/100),size=1)
   
+  patterns<-matrix(sample(c(0,1), size=npattern*d, replace=T ), nrow=npattern, ncol=d, byrow = T)
   
+  X.NA <-mar(Xtrain,ratio=ratio, by.patterns=T, patterns=patterns)
+  M<- is.na(X.NA)*1
+  unique(M)
+  nrow(unique(M))
+  mean(is.na(X.NA))
   
   saveRDS(X.NA, file=paste0("results/amputedsplit/", "mar.", ratio, ".1.", data, ".RDS"))
   saveRDS(Xtest, file=paste0("data/datasets/split/", "test.", ratio, ".1.", data, ".RDS"))

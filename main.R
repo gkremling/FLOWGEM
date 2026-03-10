@@ -20,8 +20,29 @@ X <- readRDS(paste0("data/datasets/complete/", data, ".RDS"))
 
 set.seed(1)
 
-X.NA <-mar(X,ratio=ratio)
+#X.NA <-mar(X,ratio=ratio)
+ 
+n<-nrow(X)
+d<-ncol(X)
+npattern<-sample(1:round(n/100),size=1)
+
+patterns<-matrix(sample(c(0,1), size=npattern*(d-1), replace=T ), nrow=npattern, ncol=d-1, byrow = T)
+patterns<-cbind(patterns, rep(1, nrow(patterns)))
+
+##add fully observed pattern
+if (all(rowSums(patterns)< d)){
   
+  patterns<-rbind(patterns, rep(1,d))
+  
+}
+
+
+X.NA <-mar(X,ratio=ratio, by.patterns=T, patterns=patterns)
+M<- is.na(X.NA)*1
+unique(M)
+cat(nrow(unique(M)))
+mean(is.na(X.NA))
+
   
   
 saveRDS(X.NA, file=paste0("results/amputed/", "mar.", ratio, ".1.", data, ".RDS"))
