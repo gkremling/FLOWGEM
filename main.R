@@ -24,7 +24,7 @@ set.seed(1)
  
 n<-nrow(X)
 d<-ncol(X)
-npattern<-sample(1:round(n/100),size=1)
+npattern<-sample(3:max(round(n/100),3),size=1)
 
 patterns<-matrix(sample(c(0,1), size=npattern*(d-1), replace=T ), nrow=npattern, ncol=d-1, byrow = T)
 patterns<-cbind(patterns, rep(1, nrow(patterns)))
@@ -49,9 +49,9 @@ saveRDS(X.NA, file=paste0("results/amputed/", "mar.", ratio, ".1.", data, ".RDS"
 }
 #############################################################
 
-datasets<-c("enb", "windspeed")
+datasets<-c("fat", "enb", "windspeed")
 
-ratio<-0.1
+ratio<-0.2
 S<-10
 
 methods<-c("missForest", "mice_cart", "mice_rf")
@@ -76,9 +76,9 @@ X.NA <- readRDS(paste0("results/amputed/", "mar.", ratio, ".1.", data, ".RDS"))
 
 if ("knn" %in% methods){  imputations[["knn"]]<-impute.knn(as.matrix(X.NA))$data}
 if ("missForest" %in% methods){imputations[["missForest"]]<-missForest(X.NA)$ximp}
-if ("mice_cart" %in% methods){  blub <- mice(X.NA, method = "cart", m = 1)
+if ("mice_cart" %in% methods){  blub <- mice(X.NA, method = "cart", m = 1, remove.collinear = FALSE)
 imputations[["mice_cart"]]<-mice::complete(blub, action="all")[[1]]}
-if ("mice_rf" %in% methods){  blub <- mice(X.NA, method = "rf", m = 1)
+if ("mice_rf" %in% methods){  blub <- mice(X.NA, method = "rf", m = 1, eps = 0, remove.collinear = FALSE)
 imputations[["mice_rf"]]<-mice::complete(blub, action="all")[[1]]}
 
 

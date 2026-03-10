@@ -10,8 +10,8 @@ library(missForest)
 
 
 ######################amputation################################
-ratio<-0.1
-datasets<-c("pumadyn32nm")
+ratio<-0.2
+datasets<-c("pumadyn32nm", "scm1d", "scm20d", "parkinsons")
 n<-2000
 
 for (data in datasets){
@@ -29,9 +29,18 @@ for (data in datasets){
     
 
   d<-ncol(X0)
-  npattern<-sample(1:round(n/100),size=1)
+  npattern<-sample(3:max(round(n/100),3),size=1)
   
-  patterns<-matrix(sample(c(0,1), size=npattern*d, replace=T ), nrow=npattern, ncol=d, byrow = T)
+  patterns<-matrix(sample(c(0,1), size=npattern*(d-1), replace=T ), nrow=npattern, ncol=d-1, byrow = T)
+  patterns<-cbind(patterns, rep(1, nrow(patterns)))
+  
+  ##add fully observed pattern
+  if (all(rowSums(patterns)< d)){
+    
+    patterns<-rbind(patterns, rep(1,d))
+    
+  }
+  
   
   X.NA <-mar(Xtrain,ratio=ratio, by.patterns=T, patterns=patterns)
   M<- is.na(X.NA)*1
@@ -46,7 +55,7 @@ for (data in datasets){
 
 datasets<-c("pumadyn32nm")
 
-ratio<-0.1
+ratio<-0.2
 S<-1
 
 methods<-c("missForest", "mice_cart", "mice_rf")
@@ -72,13 +81,13 @@ for (data in datasets){
   
   if ("knn" %in% methods){  imputations[["knn"]]<-impute.knn(as.matrix(X.NA))$data}
   if ("missForest" %in% methods){imputations[["missForest"]]<-missForest(X.NA)$ximp}
-  if ("mice_cart" %in% methods){  blub <- mice(X.NA, method = "cart", m = 1)
+  if ("mice_cart" %in% methods){  blub <- mice(X.NA, method = "cart", m = 1,remove.collinear = FALSE)
   imputations[["mice_cart"]]<-mice::complete(blub, action="all")[[1]]}
-  if ("mice_rf" %in% methods){  blub <- mice(X.NA, method = "rf", m = 1)
+  if ("mice_rf" %in% methods){  blub <- mice(X.NA, method = "rf", m = 1, remove.collinear = FALSE)
   imputations[["mice_rf"]]<-mice::complete(blub, action="all")[[1]]}
   
   
-  imputations[["wgf"]]<-readRDS(paste0("results/imputedsplilt/", "wgf.mar.", ratio, ".1.", data, ".RDS"))
+  imputations[["wgf"]]<-readRDS(paste0("results/imputedsplit/", "wgf.mar.", ratio, ".1.", data, ".RDS"))
   
   n<-nrow(X)
   
