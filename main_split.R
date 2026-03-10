@@ -19,6 +19,9 @@ for (data in datasets){
   X0 <- readRDS(paste0("data/datasets/complete/", data, ".RDS"))
   N<-nrow(X0)
   
+  ###Only choose numerical variables ####
+  X0<-X0[, apply(X0,2, function(x) length(unique(x)))/N >0.7 ]
+  
   
   set.seed(1)
   indextrain<-sample(1:N, size=n, replace=F)
@@ -48,17 +51,20 @@ for (data in datasets){
   nrow(unique(M))
   mean(is.na(X.NA))
   
+  colnames(Xtest)<-paste0("X", 1:ncol(X0))
+  colnames(X.NA)<-paste0("X", 1:ncol(X0))
+  
   saveRDS(X.NA, file=paste0("results/amputedsplit/", "mar.", ratio, ".1.", data, ".RDS"))
   saveRDS(Xtest, file=paste0("data/datasets/split/", "test.", ratio, ".1.", data, ".RDS"))
 }
 #############################################################
 
-datasets<-c("pumadyn32nm")
+datasets<-c("parkinsons")
 
 ratio<-0.2
 S<-1
 
-methods<-c("missForest", "mice_cart", "mice_rf")
+methods<-c("missForest","mice_rf", "mice_cart") #"missForest","mice_rf"
 
 
 imputations<-list()
@@ -77,6 +83,8 @@ for (data in datasets){
   X <- readRDS(paste0("data/datasets/split/", "test.", ratio, ".1.", data, ".RDS"))
   X.NA <- readRDS(paste0("results/amputedsplit/", "mar.", ratio, ".1.", data, ".RDS"))
   
+  colnames(X)<-paste0("X", 1:ncol(X))
+  colnames(X.NA)<-paste0("X", 1:ncol(X))
   
   
   if ("knn" %in% methods){  imputations[["knn"]]<-impute.knn(as.matrix(X.NA))$data}
@@ -99,7 +107,7 @@ for (data in datasets){
     
     set.seed(s+1)
     
-    Xboot<-X[sample(1:n, size=n, replace = T),]
+    Xboot<-X #X[sample(1:n, size=n, replace = T),]
     colnames(Xboot)<-paste0("X",1:ncol(X))
     
     ediff[s,"wgf"]<- - energy_std(imputations[["wgf"]],Xboot) #-eqdist.e( rbind(X,Ximp), c(nrow(X), nrow(Ximp))  )*(2*n)/(n^2)
