@@ -59,14 +59,13 @@ for (data in datasets){
 }
 #############################################################
 
-#datasets<-c("gas", "pumadyn32nm", "scm1d", "scm20d", "parkinsons")
+datasets<-c("gas", "pumadyn32nm", "scm1d", "scm20d", "parkinsons")
 
-datasets<-c("gas", "pumadyn32nm", "scm20d", "parkinsons")
 
 ratio<-0.2
 S<-1
 
-methods<-c("missForest","mice_rf", "mice_cart") #"missForest","mice_rf"
+methods<-c("mice_rf", "mice_cart") #"missForest","mice_rf"
 
 
 imputations<-list()
@@ -125,7 +124,7 @@ for (data in datasets){
   ediffres[data,]<-colMeans(ediff)
 }
 
-saveRDS(ediffres, file = paste0("results/", , "wgf.mar.", ratio, datasets, ".RDS"))
+saveRDS(ediffres, file = paste0("results/",  "wgf.mar.", ratio,".", paste0(datasets, collapse = "_"), paste0(methods, collapse="_"), ".RDS"))
 
 
 # par(mfrow=c(3,1))
