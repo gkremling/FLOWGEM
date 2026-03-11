@@ -59,7 +59,9 @@ for (data in datasets){
 }
 #############################################################
 
-datasets<-c("gas", "pumadyn32nm", "scm1d", "scm20d", "parkinsons")
+#datasets<-c("gas", "pumadyn32nm", "scm1d", "scm20d", "parkinsons")
+
+datasets<-c("gas", "pumadyn32nm", "scm20d", "parkinsons")
 
 ratio<-0.2
 S<-1
@@ -89,9 +91,9 @@ for (data in datasets){
   
   if ("knn" %in% methods){  imputations[["knn"]]<-impute.knn(as.matrix(X.NA))$data}
   if ("missForest" %in% methods){imputations[["missForest"]]<-missForest(X.NA)$ximp}
-  if ("mice_cart" %in% methods){  blub <- mice(X.NA, method = "cart", m = 1,remove.collinear = FALSE)
+  if ("mice_cart" %in% methods){  blub <- mice(X.NA, method = "cart", m = 1,remove.collinear = FALSE, eps=0)
   imputations[["mice_cart"]]<-mice::complete(blub, action="all")[[1]]}
-  if ("mice_rf" %in% methods){  blub <- mice(X.NA, method = "rf", m = 1, remove.collinear = FALSE)
+  if ("mice_rf" %in% methods){  blub <- mice(X.NA, method = "rf", m = 1, remove.collinear = FALSE, eps=0)
   imputations[["mice_rf"]]<-mice::complete(blub, action="all")[[1]]}
   
   
@@ -122,6 +124,8 @@ for (data in datasets){
   
   ediffres[data,]<-colMeans(ediff)
 }
+
+saveRDS(ediffres, file = paste0("results/", , "wgf.mar.", ratio, datasets, ".RDS"))
 
 
 # par(mfrow=c(3,1))
