@@ -99,8 +99,6 @@ for (data in datasets){
   
   n<-nrow(X)
   
-  
-  ##Continue here!!!
   ediff<-matrix(NaN, nrow=S, ncol=length(methods)+1)
   colnames(ediff)<-c(methods, "wgf")
   for (s in 1:S){
