@@ -98,6 +98,9 @@ for (data in datasets){
   
   imputations[["wgf"]]<-readRDS(paste0("results/imputedsplit/", "wgf.mar.", ratio, ".1.", data, ".RDS"))
   
+  saveRDS(imputations, file = paste0("results/",  "imputations.mar.", ratio,".", data, paste0(methods, collapse="_"), ".RDS"))
+  
+  
   n<-nrow(X)
   
   ediff<-matrix(NaN, nrow=S, ncol=length(methods)+1)
