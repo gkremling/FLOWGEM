@@ -65,7 +65,7 @@ datasets<-c("gas", "pumadyn32nm", "scm1d", "scm20d", "parkinsons")
 ratio<-0.2
 S<-1
 
-methods<-c("mice_rf", "mice_cart") #"missForest","mice_rf"
+methods<-c("missForest", "mice_rf", "mice_cart") #"missForest","mice_rf"
 
 
 imputations<-list()
@@ -125,6 +125,65 @@ for (data in datasets){
   }
   
   ediffres[data,]<-colMeans(ediff)
+}
+
+saveRDS(ediffres, file = paste0("results/",  "wgf.mar.", ratio,".", paste0(datasets, collapse = "_"), paste0(methods, collapse="_"), ".RDS"))
+
+
+###After saving imputations ####
+
+
+
+datasets<-c("gas", "pumadyn32nm", "scm1d", "scm20d", "parkinsons")
+
+
+ratio<-0.2
+S<-1
+
+methods<-c("missForest", "mice_rf", "mice_cart") #"missForest","mice_rf"
+
+
+imputations<-list()
+ediffres<-matrix(NaN, nrow=length(datasets), ncol=length(methods)+1)
+
+colnames(ediffres)<-c(methods, "wgf")
+rownames(ediffres)<-datasets
+
+
+for (data in datasets){
+  
+  X <- readRDS(paste0("data/datasets/split/", "test.", ratio, ".1.", data, ".RDS"))
+  
+  
+  n<-nrow(X)
+  
+  imputations<-readRDS(paste0("results/",  "imputations.mar.", ratio,".", data, paste0(methods, collapse="_"), ".RDS"))
+  
+  
+  ediff<-matrix(NaN, nrow=S, ncol=length(methods)+1)
+  colnames(ediff)<-c(methods, "wgf")
+  for (s in 1:S){
+    
+    set.seed(s+1)
+    
+    Xboot<-X #X[sample(1:n, size=n, replace = T),]
+    colnames(Xboot)<-paste0("X",1:ncol(X))
+    
+    ediff[s,"wgf"]<- - energy_std(imputations[["wgf"]],Xboot) #-eqdist.e( rbind(X,Ximp), c(nrow(X), nrow(Ximp))  )*(2*n)/(n^2)
+    for (method in c(methods)){
+      
+      
+      Ximp<-imputations[[method]]
+      
+      colnames(Ximp)<-paste0("X",1:ncol(X))
+      ediff[s,method]<- -energy_std(Ximp,Xboot) #-eqdist.e( rbind(X,Ximp), c(nrow(X), nrow(Ximp))  )*(2*n)/(n^2)
+    }
+    
+  }
+  
+  ediffres[data,]<-colMeans(ediff)
+  
+  
 }
 
 saveRDS(ediffres, file = paste0("results/",  "wgf.mar.", ratio,".", paste0(datasets, collapse = "_"), paste0(methods, collapse="_"), ".RDS"))
