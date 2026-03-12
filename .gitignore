@@ -20,3 +20,6 @@ figures/
 *.pdf
 results/amputed/*
 results/imputed/*
+results/simulations/*
+.ipynb_checkpoints/
+.jupyter/
