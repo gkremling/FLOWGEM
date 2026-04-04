@@ -1,6 +1,25 @@
 
 # ------------------------------------------------------------- IMPLEMENTATIONS
 
+
+
+energy_dist<-function (X, X_imp){ 
+  energy::eqdist.e(rbind(X, X_imp), c(nrow(X), nrow(X_imp)))
+}
+
+
+energy_std <- function(original_data, imputed_data, ...) {
+  
+  scaled_original <- scale(original_data)
+  
+  scaled_imputed <- sapply(1:ncol(imputed_data), function(i) {
+    (imputed_data[, i] - attr(scaled_original, "scaled:center")[i])/ 
+      attr(scaled_original, "scaled:scale")[i]
+  })
+  
+  return(energy_dist(X = scaled_original, X_imp = scaled_imputed))
+}
+
 mae <- function(original_data, imputed_data, amputed_data) {
   observed <- original_data[is.na(amputed_data)]
   imputed <- imputed_data[is.na(amputed_data)]
@@ -21,24 +40,14 @@ nrmse <- function(original_data, imputed_data, amputed_data) {
 
 energy <- function(original_data, imputed_data, ...) {
   safe_score(
-    miceDRF::energy_dist(X = original_data, X_imp = imputed_data),
+    energy_dist(X = original_data, X_imp = imputed_data),
     original_data,
     imputed_data
   )  
 }
 
-energy_std <- function(original_data, imputed_data, ...) {
-  safe_score({
-    scaled_original <- scale(original_data)
-    
-    scaled_imputed <- sapply(1:ncol(imputed_data), function(i) {
-      (imputed_data[, i] - attr(scaled_original, "scaled:center")[i])/ 
-        attr(scaled_original, "scaled:scale")[i]
-    })
-    
-    miceDRF::energy_dist(X = scaled_original, X_imp = scaled_imputed)
-  }, original_data, imputed_data)
-}
+
+
 
 feature_wise_wasserstein <- function(original_data, imputed_data, ...) {
   safe_score({
@@ -70,178 +79,4 @@ sliced_wasserstein <- function(original_data, imputed_data, ...) {
     T4transport::swdist(as.matrix(original_data), 
                         as.matrix(imputed_data))$distance
   }, original_data, imputed_data)
-}
-
-# ------------------------------------------------------------- CALCULATE SCORES
-
-
-calculate_scores <- function(imputed, amputed, imputation_fun, multiple, 
-                             imputed_id, timeout_thresh, filepath_original, 
-                             case, var_type = NULL, scores = NULL) {
-  
-  imputed_data <- imputed[["imputed"]]
-  res <- imputed[["res"]]
-  
-  if(!is.na(res[["error"]])) {
-    error_measures <- switch (case, 
-                              complete = scores,
-                              categorical = c("energy", "energy_std"),
-                              incomplete = c("IScore", "IScore_scaled"),
-                              incomplete_categorical = "IScore_cat")
-    
-    return(cross_join(res, data.frame(measure = error_measures, score = NA)))
-  }
-  
-  original_data <- readRDS(filepath_original)
-  
-  scores_res <- switch(
-    case,
-    # complete:
-    complete = scores_for_complete(original_data = original_data, 
-                                   amputed_data = amputed, 
-                                   imputed_data = imputed_data,
-                                   imputation_fun = imputation_fun,
-                                   scores = scores),
-    categorical = scores_for_categorical(original_data = original_data, 
-                                         imputed_data = imputed_data),
-    # incomplete:
-    incomplete = scores_for_incomplete(original_data = original_data, 
-                                       imputed_data = imputed_data, 
-                                       imputation_fun = imputation_fun,
-                                       multiple = multiple,
-                                       timeout_thresh = timeout_thresh,
-                                       case=case, var_type = var_type),
-    incomplete_categorical = scores_for_incomplete(original_data = original_data, 
-                                                   imputed_data = imputed_data, 
-                                                   imputation_fun = imputation_fun,
-                                                   multiple = multiple,
-                                                   timeout_thresh = timeout_thresh,
-                                                   case = case, var_type = var_type)
-  )
-  
-  res %>% 
-    cross_join(scores_res)
-}
-
-
-
-
-scores_for_categorical <- function(original_data, imputed_data) {
-  
-  ids_categoricals <- which(sapply(original_data, is.factor))
-  # imputed_data <- mutate(imputed_data, across(matches(names(ids_categoricals)), as.factor))
-  imputed_data[ids_categoricals] <- mutate_all(imputed_data[ids_categoricals], as.factor)
-  
-  dim_imputed <- dim(imputed_data)
-  dim_original <- dim(original_data)
-  
-  # first rbind
-  binded_data <- rbind(original_data, imputed_data)
-  # then one hot encode
-  binded_data <- one_hot_encoding(binded_data)
-  # then split
-  original_data <- binded_data[1:dim_original[1], ]
-  imputed_data <- binded_data[dim_original[1]+1:dim_imputed[1], ]
-  
-  # original_data <- one_hot_encoding(original_data)
-  # imputed_data <- one_hot_encoding(imputed_data)
-  
-  energy_val <- energy(original_data, imputed_data)
-  
-  energy_std_val <- energy_std(original_data, imputed_data)
-  
-  data.frame(measure = c("energy", "energy_std"), 
-             score = c(energy_val, energy_std_val))
-  
-}
-
-
-scores_for_complete <- function(original_data, amputed_data, imputed_data, 
-                                imputation_fun, scores) {
-  
-  lapply(scores, function(ith_score) {
-    value <- get(ith_score)(original_data, imputed_data, amputed_data)
-    name <- ith_score
-    
-    data.frame(measure = name,
-               score = value)
-    
-  }) %>%  bind_rows()
-  
-}
-
-
-scores_for_incomplete <- function(original_data, imputed_data, imputation_fun,
-                                  multiple, timeout_thresh, case, var_type) {
-  
-  if(case == "incomplete_categorical") {
-    
-    ids_categoricals <- names(which(sapply(original_data, is.factor)))
-    imputed_data <- mutate(imputed_data, across(all_of(ids_categoricals), as.factor))
-    
-    ImpScore <- try({
-      miceDRF::Iscore_cat(X = original_data, X_imp = imputed_data, N = 20,
-                          imputation_func = imputation_fun, factor_vars = FALSE, 
-                          multiple = multiple)
-    })
-    score_name <- "IScore_cat"
-  } else {
-    ImpScore <- try({
-      miceDRF::Iscore(X = original_data, X_imp = imputed_data, N = 20,
-                      multiple = multiple, imputation_func = imputation_fun,
-                      scale = FALSE)
-    })
-    score_name <- c("IScore", "IScore_scaled")
-    
-    ImpScore_scaled <- try({
-      miceDRF::Iscore(X = original_data, X_imp = imputed_data, N = 20,
-                      multiple = multiple, imputation_func = imputation_fun,
-                      scale = TRUE)
-    })
-    
-    ImpScore <- c(ImpScore, ImpScore_scaled)
-    
-  }
-  
-  if(inherits(ImpScore, "try-error")) {
-    ImpScore <- NA
-  } else {
-    ImpScore <- as.numeric(ImpScore)
-  }
-  
-  data.frame(measure = score_name, score = ImpScore)
-}
-
-
-# ---------------------------------------------------------------  HELPERS -----
-
-
-summarize_imputations <- function(all_scores, params) {
-  
-  params %>% 
-    left_join(all_scores, by = "imputed_id") %>% 
-    dplyr::select(set_id, mechanism, ratio, rep, case, method, imputation_fun, 
-                  time, attempts, error, measure, score)
-}
-
-safe_score <- function(expr, original_data, imputed_data) {
-  score <- try({
-    expr
-  })
-  score <- ifelse(inherits(score, "try-error"), NA, as.numeric(score))
-  score
-}
-
-
-stop_on_timeout <- function(missing_data_set, 
-                            imputing_function, 
-                            timeout_thresh = 600) {
-  R.utils::withTimeout(imputing_function(missing_data_set), 
-                       timeout = timeout_thresh, 
-                       onTimeout = "error")
-}
-
-
-one_hot_encoding <- function(dat) {
-  data.frame(mltools::one_hot(data.table::as.data.table(dat)))
 }
