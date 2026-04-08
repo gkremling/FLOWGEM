@@ -114,7 +114,7 @@ def evaluate_sigma(xpi, xrho, sigma, splits_pi, splits_rho):
     
 #================ Main method ================#
 
-def sample_flowgem(X0, X_obs, M, T=500, eta=0.01, grad_tol=0.02, min_iter=10, sigma_fix=None, sigma_vals=None, cv_every=10):
+def sample_flowgem(X0, X_obs, M, T=1000, eta=0.01, grad_tol=0.01, min_iter=10, sigma_fix=None, sigma_vals=None, cv_every=10):
     Xt = X0.clone().to(dtype = torch.float64, device = device)
     M = M.clone().to(dtype = torch.float64, device = device)
     X = X_obs.to(dtype = torch.float64, device = device)
