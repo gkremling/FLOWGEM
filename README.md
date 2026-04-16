@@ -36,7 +36,7 @@ The R script `main_realdata.R` prepares the real datasets by amputing them and i
 - `Bayesian/` contains the implementation of the Bayesian approach from [Chérief-Abdellatif and Näf (2026)](https://arxiv.org/abs/2603.23449)
 - `MIRI-Imputation/` contains the implementations of MIRI, MissDiff and NewImp from [Yu et al. (2025)](https://arxiv.org/abs/2505.11749)
 - `datasets/` contains the real datasets (the complete ones as well as the fully-observed and amputed parts after splitting)
-- `results/` contains the saved results (excluded due to file size, but can be reproduced as described above)
+- `results/` contains the saved results (simulation results are included, while real data results are excluded due to file size, but can be reproduced as described above)
 
 ## Citation
 
